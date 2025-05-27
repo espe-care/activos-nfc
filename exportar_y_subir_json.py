@@ -7,18 +7,27 @@ SHEET_NAME = "Combinar2"
 JSON_FILE = "activos_visa.json"
 
 COLUMNAS = [
-    "ID", "DESCRIPCION", "MODELO", "NUMERO SERIE",
-    "FECHA ALTA", "FECHA_PLANIFICADA", "DEPARTAMENTO"
+    "ID", "COD_ORG", "DESCRIPCION", "MODELO", "NUMERO SERIE",
+    "FECHA_ALTA", "FECHA_PLANIFICADA", "DEPARTAMENTO"
 ]
 
 def exportar_a_json():
     print("📥 Leyendo Excel...")
     df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, dtype=str)
     df.columns = df.columns.str.strip()
-    df = df[[col for col in COLUMNAS if col in df.columns]]
+
+    # Filtrar solo columnas necesarias y existentes
+    columnas_presentes = [col for col in COLUMNAS if col in df.columns]
+    df = df[columnas_presentes]
+
+    # Renombrar columnas para estandarizar nombres con guiones bajos
+    df = df.rename(columns={
+        "NUMERO SERIE": "NUMERO_SERIE",
+        "FECHA ALTA": "FECHA_ALTA"
+    })
 
     # Formatear fechas a YYYY-MM-DD sin hora
-    for campo_fecha in ["FECHA ALTA", "FECHA_PLANIFICADA"]:
+    for campo_fecha in ["FECHA_ALTA", "FECHA_PLANIFICADA"]:
         if campo_fecha in df.columns:
             df[campo_fecha] = pd.to_datetime(df[campo_fecha], errors='coerce').dt.strftime('%Y-%m-%d')
 
@@ -31,7 +40,7 @@ def subir_a_github():
     # Solo añadimos el JSON al área de staging
     subprocess.run(["git", "add", JSON_FILE], check=True)
 
-    # Guardamos el commit
+    # Guardamos el commit si hay cambios
     result = subprocess.run(["git", "diff", "--cached", "--quiet"])
     if result.returncode == 0:
         print("ℹ️ No hay cambios nuevos.")
@@ -42,7 +51,7 @@ def subir_a_github():
     # Descartamos temporalmente los cambios sin guardar (como el Excel)
     subprocess.run(["git", "stash", "--keep-index"], check=True)
 
-    # Ahora sí podemos hacer pull y push sin errores
+    # Hacemos pull y push
     subprocess.run(["git", "pull", "--rebase"], check=True)
     subprocess.run(["git", "push"], check=True)
 
@@ -51,8 +60,6 @@ def subir_a_github():
 
     print("✅ JSON subido correctamente.")
 
-
 if __name__ == "__main__":
     exportar_a_json()
     subir_a_github()
-
