@@ -22,7 +22,6 @@ def exportar_a_json():
 
     # Renombrar columnas para estandarizar nombres con guiones bajos
     df = df.rename(columns={
-        "NUMERO SERIE": "NUMERO SERIE",
         "FECHA ALTA": "FECHA_ALTA"
     })
 
